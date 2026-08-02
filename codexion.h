@@ -5,6 +5,10 @@
 # include <stdio.h>
 # include <unistd.h>
 # include <fcntl.h>
+# include <pthread.h>
+
+typedef struct s_shared t_shared;
+typedef struct s_coder  t_coder; 
 
 typedef struct  t_arg
 {
@@ -18,6 +22,45 @@ typedef struct  t_arg
     int scheduler;
 
 }t_arg;
+
+typedef struct t_scheduler
+{
+    int state;
+}t_scheduler;
+
+
+typedef struct  t_dongle
+{
+    int dongle_id;
+    int is_held;
+    long available_at;
+    pthread_mutex_t lock;
+}t_dongle;
+
+typedef struct s_coder
+{
+    int coder_id;
+    int compiles_done;
+    int phase;
+    int left_dongle;
+    int right_dongle;
+    long last_compile_start;
+    t_shared *shared;
+}t_coder;
+
+typedef struct s_shared
+{
+    t_arg *args;
+    t_dongle *dongle_array;
+    t_coder *coders;
+    int stop_simulation;
+    pthread_mutex_t mutex_stop;
+    pthread_mutex_t log_mutex;
+    long start_simulation;
+    t_scheduler *scheduler_state;
+}t_shared;
+
+
 
 
 int	ft_atoi(const char	*str);
