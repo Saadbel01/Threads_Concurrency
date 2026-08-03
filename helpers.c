@@ -1,7 +1,7 @@
 #include "codexion.h"
 
 
-int	ft_strcmp(const char	*s1, const char	*s2)
+int		ft_strcmp(const char	*s1, const char	*s2)
 {
 	size_t	i;
 
@@ -13,7 +13,7 @@ int	ft_strcmp(const char	*s1, const char	*s2)
 	return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
-int	ft_strlen(const char	*str)
+int		ft_strlen(const char	*str)
 {
 	int	i;
 
@@ -23,4 +23,12 @@ int	ft_strlen(const char	*str)
 		i++;
 	}
 	return (i);
+}
+
+long	get_time_ms(void)
+{
+	struct timeval	tv;
+
+	gettimeofday(&tv, NULL);
+	return ((long)tv.tv_sec * 1000L + (long)tv.tv_usec / 1000L);
 }

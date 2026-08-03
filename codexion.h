@@ -6,6 +6,8 @@
 # include <unistd.h>
 # include <fcntl.h>
 # include <pthread.h>
+# include <sys/time.h>
+
 
 typedef struct s_shared t_shared;
 typedef struct s_coder  t_coder; 
@@ -61,11 +63,9 @@ typedef struct s_shared
 }t_shared;
 
 
-
-
-int	ft_atoi(const char	*str);
-int	ft_strcmp(const char	*s1, const char	*s2);
-int ft_strlen(const char    *str);
 void get_arguments(char **argv, t_arg    *args);
+int     ft_strcmp(const char	*s1, const char	*s2);
+int     ft_strlen(const char    *str);
+long	get_time_ms(void);
 
 #endif
