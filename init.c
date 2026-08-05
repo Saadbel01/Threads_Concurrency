@@ -1,21 +1,49 @@
 #include "codexion.h"
 
 
+#include "codexion.h"
+
 int init_dongle_array(t_dongle *array, int nb_coders)
 {
     int i;
-    i = 1;
+    int j;
 
-    while (i <= nb_coders)
+    i = 0;
+    while (i < nb_coders)
     {
-        array->dongle_id = i;
-        array->available_at = 0;
-        array->is_held = 0;
-        if (pthread_mutex_init(&array->lock, NULL) != 0)
+        array[i].dongle_id = i + 1;
+        array[i].available_at = 0;
+        array[i].is_held = 0;
+
+        if (pthread_mutex_init(&array[i].lock, NULL) != 0)
+        {
+            j = i - 1;
+            while (j >= 0)
+            {
+                pthread_cond_destroy(&array[j].cond);
+                pthread_mutex_destroy(&array[j].lock);
+                j--;
+            }
             return (-1);
-        array ++;
+        }
+
+        if (pthread_cond_init(&array[i].cond, NULL) != 0)
+        {
+            pthread_mutex_destroy(&array[i].lock);
+
+            j = i - 1;
+            while (j >= 0)
+            {
+                pthread_cond_destroy(&array[j].cond);
+                pthread_mutex_destroy(&array[j].lock);
+                j--;
+            }
+            return (-1);
+        }
+
         i++;
     }
+
     return (0);
 }
 
@@ -43,6 +71,10 @@ void init_coders(t_coder *coders, t_shared *shared, int nb_coders)
 t_shared *init_shared(t_arg *args)
 {
     t_shared *shared_args;
+    int res_init_dongle_array;
+    int i;
+
+    i = 0;
 
     shared_args = malloc(sizeof(t_shared));
 
@@ -59,9 +91,18 @@ t_shared *init_shared(t_arg *args)
         free(shared_args);
         exit(1);
     }
-    if (init_dongle_array(shared_args->dongle_array, shared_args->args->nb_coders) == -1)
+
+    res_init_dongle_array = init_dongle_array(shared_args->dongle_array, shared_args->args->nb_coders);
+    if (res_init_dongle_array != 0)
     {
         printf("Error failed to init the dongle array.");
+        while (i < res_init_dongle_array - 1)
+        {
+            pthread_mutex_destroy(&shared_args->dongle_array[i].lock);
+            pthread_cond_destroy(&shared_args->dongle_array[i].cond);
+            i++;
+        }
+        
         free(shared_args->dongle_array);
         free(shared_args);
         exit(1);

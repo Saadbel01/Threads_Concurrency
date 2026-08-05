@@ -1,5 +1,20 @@
 #include "codexion.h"
 
+
+void take_dongle(t_dongle *dongle, int coder_id)
+{
+    pthread_mutex_lock(&dongle->lock);
+    while (dongle->is_held == 1
+            || get_time_ms() < dongle->available_at)
+    {
+        pthread_cond_wait(&dongle->cond, &dongle->lock);
+    }
+    dongle->is_held = 1;
+    printf("Coder %d has taken dongle %d.\n", coder_id, dongle->dongle_id);
+    pthread_mutex_unlock(&dongle->lock);
+    
+}
+
 void    acquire_dongles(t_coder *coder)
 {
     t_dongle   *first_dongle;
@@ -19,39 +34,8 @@ void    acquire_dongles(t_coder *coder)
         second_dongle = &coder->shared->dongle_array[coder->left_dongle - 1];
     }
 
-    pthread_mutex_lock(&first_dongle->lock);
+    take_dongle(first_dongle, coder->coder_id);
+    take_dongle(second_dongle, coder->coder_id);
 
-    if (first_dongle->is_held == 0
-        && get_time_ms() >= first_dongle->available_at)
-    {
-        first_dongle->is_held = 1;
-        printf("Coder %d has taken a dongle.\n", coder->coder_id);
-    }
-    else
-    {
-        pthread_mutex_unlock(&first_dongle->lock);
-        return;
-    }
-
-    pthread_mutex_unlock(&first_dongle->lock);
-
-    pthread_mutex_lock(&second_dongle->lock);
-
-    if (second_dongle->is_held == 0
-        && get_time_ms() >= second_dongle->available_at)
-    {
-        second_dongle->is_held = 1;
-        second_acquired = 1;
-        printf("Coder %d has taken a dongle.\n", coder->coder_id);
-    }
-
-    pthread_mutex_unlock(&second_dongle->lock);
-
-    if (second_acquired == 0)
-    {
-        pthread_mutex_lock(&first_dongle->lock);
-        first_dongle->is_held = 0;
-        pthread_mutex_unlock(&first_dongle->lock);
-    }
 }
 

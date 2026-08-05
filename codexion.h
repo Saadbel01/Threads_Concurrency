@@ -37,6 +37,7 @@ typedef struct  t_dongle
     int is_held;
     long available_at;
     pthread_mutex_t lock;
+    pthread_cond_t cond;
 }t_dongle;
 
 typedef struct s_coder
