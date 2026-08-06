@@ -1,8 +1,5 @@
 #include "codexion.h"
 
-
-#include "codexion.h"
-
 int init_dongle_array(t_dongle *array, int nb_coders)
 {
     int i;
@@ -72,9 +69,6 @@ t_shared *init_shared(t_arg *args)
 {
     t_shared *shared_args;
     int res_init_dongle_array;
-    int i;
-
-    i = 0;
 
     shared_args = malloc(sizeof(t_shared));
 
@@ -95,14 +89,7 @@ t_shared *init_shared(t_arg *args)
     res_init_dongle_array = init_dongle_array(shared_args->dongle_array, shared_args->args->nb_coders);
     if (res_init_dongle_array != 0)
     {
-        printf("Error failed to init the dongle array.");
-        while (i < res_init_dongle_array - 1)
-        {
-            pthread_mutex_destroy(&shared_args->dongle_array[i].lock);
-            pthread_cond_destroy(&shared_args->dongle_array[i].cond);
-            i++;
-        }
-        
+        printf("Error failed to init the dongle array.");        
         free(shared_args->dongle_array);
         free(shared_args);
         exit(1);
