@@ -48,6 +48,7 @@ typedef struct s_coder
     int left_dongle;
     int right_dongle;
     long last_compile_start;
+    pthread_mutex_t compile_lock;
     t_shared *shared;
 }t_coder;
 

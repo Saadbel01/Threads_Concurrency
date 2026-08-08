@@ -37,38 +37,50 @@ int init_dongle_array(t_dongle *array, int nb_coders)
             }
             return (-1);
         }
-
         i++;
     }
 
     return (0);
 }
 
-void init_coders(t_coder *coders, t_shared *shared, int nb_coders)
+int init_coders(t_coder *coders, t_shared *shared, int nb_coders)
 {
     int i;
-    i = 1;
+    int j;
 
-    while (i <= nb_coders)
+    i = 0;
+    while (i < nb_coders)
     {
-        coders->coder_id = i;
-        coders->compiles_done = 0;
-        coders->last_compile_start = 0;
-        coders->phase = 0;
-        coders->shared = shared;
-        coders->right_dongle = i;
-        coders->left_dongle = i - 1;
-        if (i == 1)
-            coders->left_dongle = nb_coders;
-        coders ++;
+        coders[i].coder_id = i + 1;
+        coders[i].compiles_done = 0;
+        coders[i].last_compile_start = 0;
+        coders[i].phase = 0;
+        coders[i].shared = shared;
+        coders[i].right_dongle = i + 1;
+        coders[i].left_dongle = i;
+        if (i == 0)
+            coders[i].left_dongle = nb_coders;
+
+        if (pthread_mutex_init(&coders[i].compile_lock, NULL) != 0)
+        {
+            j = i - 1;
+            while (j >= 0)
+            {
+                pthread_mutex_destroy(&coders[j].compile_lock);
+                j--;
+            }
+            return (-1);
+        }
         i++;
     }
+    return (0);
 }
 
 t_shared *init_shared(t_arg *args)
 {
     t_shared *shared_args;
     int res_init_dongle_array;
+    int res_init_coders;
 
     shared_args = malloc(sizeof(t_shared));
 
@@ -102,7 +114,15 @@ t_shared *init_shared(t_arg *args)
         free(shared_args);
         exit(1);
     }
-    init_coders(shared_args->coders, shared_args, shared_args->args->nb_coders);
+    res_init_coders = init_coders(shared_args->coders, shared_args, shared_args->args->nb_coders);
+    if (res_init_coders != 0)
+    {
+        printf("Error the lock mutex failed.");
+        free(shared_args->coders);
+        free(shared_args->dongle_array);
+        free(shared_args);
+        exit(1);
+    }
     if (pthread_mutex_init(&shared_args->log_mutex, NULL) != 0)
     {
         printf("Error the log mutex failed.");

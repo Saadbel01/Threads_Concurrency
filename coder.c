@@ -38,28 +38,39 @@ void    *coder_routine(void *arg)
     while (1)
     {
         acquire_dongles(coder);
+        pthread_mutex_lock(&coder->compile_lock);
         coder->last_compile_start = get_time_ms() ;
+        pthread_mutex_unlock(&coder->compile_lock);
+        
         compling(coder);
         release_dongles(coder);
-        coder->compiles_done += 1;
-        pthread_mutex_lock(&coder->shared->mutex_stop);
-        stop = coder->shared->stop_simulation;
-        pthread_mutex_unlock(&coder->shared->mutex_stop);
-        if (stop)
-            break;
         
-        debugging(coder);
+        pthread_mutex_lock(&coder->compile_lock);
+        coder->compiles_done += 1;
+        pthread_mutex_unlock(&coder->compile_lock);
+
         pthread_mutex_lock(&coder->shared->mutex_stop);
         stop = coder->shared->stop_simulation;
         pthread_mutex_unlock(&coder->shared->mutex_stop);
+
         if (stop)
             break;
 
+        debugging(coder);
+
+        pthread_mutex_lock(&coder->shared->mutex_stop);
+        stop = coder->shared->stop_simulation;
+        pthread_mutex_unlock(&coder->shared->mutex_stop);
+
+        if (stop)
+            break;
 
         refactoring(coder);
+
         pthread_mutex_lock(&coder->shared->mutex_stop);
         stop = coder->shared->stop_simulation;
         pthread_mutex_unlock(&coder->shared->mutex_stop);
+
         if (stop)
             break;
     }
