@@ -1,7 +1,7 @@
 #include "codexion.h"
 
 
-void take_dongle(t_dongle *dongle, int coder_id)
+void take_dongle(t_dongle *dongle, t_coder  *coder)
 {
     pthread_mutex_lock(&dongle->lock);
     while (dongle->is_held == 1
@@ -10,7 +10,9 @@ void take_dongle(t_dongle *dongle, int coder_id)
         pthread_cond_wait(&dongle->cond, &dongle->lock);
     }
     dongle->is_held = 1;
-    printf("Coder %d has taken dongle %d.\n", coder_id, dongle->dongle_id);
+    pthread_mutex_lock(&coder->shared->log_mutex);
+    printf("%ld %d has taken a dongle\n", get_time_ms() - coder->shared->start_simulation, coder->coder_id);
+    pthread_mutex_unlock(&coder->shared->log_mutex);
     pthread_mutex_unlock(&dongle->lock);
     
 }
@@ -31,8 +33,8 @@ void    acquire_dongles(t_coder *coder)
         second_dongle = &coder->shared->dongle_array[coder->left_dongle - 1];
     }
 
-    take_dongle(first_dongle, coder->coder_id);
-    take_dongle(second_dongle, coder->coder_id);
+    take_dongle(first_dongle, coder);
+    take_dongle(second_dongle, coder);
 
 }
 
