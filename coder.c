@@ -76,3 +76,58 @@ void    *coder_routine(void *arg)
     }
     return (NULL);
 }
+
+void    *monitor_routine(void   *arg)
+{
+    int i;
+    long last_compile;
+    int compiles_done;
+    int burnout;
+    int coder_done;
+    int burnout_id;
+    t_shared *shared;
+
+    shared = (t_shared *)arg;
+    
+    while (1)
+    {
+        i = 0;
+        burnout = 0;
+        coder_done = 1;
+        while (i < shared->args->nb_coders)
+        {
+            pthread_mutex_lock(&shared->coders[i].compile_lock);
+            last_compile = shared->coders[i].last_compile_start;
+            compiles_done = shared->coders[i].compiles_done;
+            pthread_mutex_unlock(&shared->coders[i].compile_lock);
+            if (get_time_ms() - last_compile > shared->args->time_to_burnout)
+            {    
+                burnout = 1;
+                burnout_id = shared->coders[i].coder_id;
+            }
+            if (compiles_done < shared->args->nb_of_compiles)
+                coder_done = 0;
+            i++;
+        }
+        
+        if (burnout == 1)
+        {
+            pthread_mutex_lock(&shared->log_mutex);
+            printf("%ld %d burned out\n", get_time_ms() - shared->start_simulation, burnout_id);
+            pthread_mutex_unlock(&shared->log_mutex);
+            
+            pthread_mutex_lock(&shared->mutex_stop);
+            shared->stop_simulation = 1;
+            pthread_mutex_unlock(&shared->mutex_stop);
+            return (NULL);
+        }
+        else if (coder_done == 1)
+        {
+            pthread_mutex_lock(&shared->mutex_stop);
+            shared->stop_simulation = 1;
+            pthread_mutex_unlock(&shared->mutex_stop);
+            return (NULL);
+        }
+        usleep(1000);
+    }
+}
