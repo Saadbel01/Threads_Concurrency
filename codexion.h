@@ -69,7 +69,8 @@ void get_arguments(char **argv, t_arg    *args);
 int     ft_strcmp(const char	*s1, const char	*s2);
 int     ft_strlen(const char    *str);
 long	get_time_ms(void);
-void    acquire_dongles(t_coder *coder);
+int    acquire_dongles(t_coder *coder);
 void    release_dongles(t_coder *coder);
+void    *coder_routine(void *arg);
 
 #endif

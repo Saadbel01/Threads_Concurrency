@@ -37,7 +37,8 @@ void    *coder_routine(void *arg)
 
     while (1)
     {
-        acquire_dongles(coder);
+        if (acquire_dongles(coder) == -1)
+            break;
         pthread_mutex_lock(&coder->compile_lock);
         coder->last_compile_start = get_time_ms() ;
         pthread_mutex_unlock(&coder->compile_lock);
@@ -77,6 +78,20 @@ void    *coder_routine(void *arg)
     return (NULL);
 }
 
+void wake_all_dongles(t_shared *shared)
+{
+    int i;
+
+    i = 0;
+    while (i < shared->args->nb_coders)
+    {
+        pthread_mutex_lock(&shared->dongle_array[i].lock);
+        pthread_cond_broadcast(&shared->dongle_array[i].cond);
+        pthread_mutex_unlock(&shared->dongle_array[i].lock);
+        i++;
+    }
+}
+
 void    *monitor_routine(void   *arg)
 {
     int i;
@@ -94,6 +109,7 @@ void    *monitor_routine(void   *arg)
         i = 0;
         burnout = 0;
         coder_done = 1;
+        
         while (i < shared->args->nb_coders)
         {
             pthread_mutex_lock(&shared->coders[i].compile_lock);
@@ -109,7 +125,6 @@ void    *monitor_routine(void   *arg)
                 coder_done = 0;
             i++;
         }
-        
         if (burnout == 1)
         {
             pthread_mutex_lock(&shared->log_mutex);
@@ -119,6 +134,7 @@ void    *monitor_routine(void   *arg)
             pthread_mutex_lock(&shared->mutex_stop);
             shared->stop_simulation = 1;
             pthread_mutex_unlock(&shared->mutex_stop);
+            wake_all_dongles(shared);
             return (NULL);
         }
         else if (coder_done == 1)
@@ -126,6 +142,7 @@ void    *monitor_routine(void   *arg)
             pthread_mutex_lock(&shared->mutex_stop);
             shared->stop_simulation = 1;
             pthread_mutex_unlock(&shared->mutex_stop);
+            wake_all_dongles(shared);
             return (NULL);
         }
         usleep(1000);
