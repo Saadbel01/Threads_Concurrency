@@ -5,7 +5,6 @@ void    compling(t_coder    *coder)
 {
     pthread_mutex_lock(&coder->shared->log_mutex);
     printf("%lld %d is compiling\n", get_time_ms() - coder->shared->start_simulation,coder->coder_id);
-    fflush(stdout);
     pthread_mutex_unlock(&coder->shared->log_mutex);
     usleep(coder->shared->args->time_to_compile * 1000);
 }
@@ -16,7 +15,6 @@ void    debugging(t_coder    *coder)
 {
     pthread_mutex_lock(&coder->shared->log_mutex);
     printf("%lld %d is debugging\n",get_time_ms() - coder->shared->start_simulation, coder->coder_id);
-    fflush(stdout);
     pthread_mutex_unlock(&coder->shared->log_mutex);
     usleep(coder->shared->args->time_to_debug * 1000);
 }
@@ -26,7 +24,6 @@ void    refactoring(t_coder    *coder)
 {
     pthread_mutex_lock(&coder->shared->log_mutex);
     printf("%lld %d is refactoring\n", get_time_ms() - coder->shared->start_simulation, coder->coder_id);
-    fflush(stdout);
     pthread_mutex_unlock(&coder->shared->log_mutex);
     usleep(coder->shared->args->time_to_refactor * 1000);
 }
@@ -38,8 +35,7 @@ void    *coder_routine(void *arg)
     int compiles_done;
     t_coder *coder;
     coder = (t_coder *)arg;
-    
-    // printf("DEBUG: coder %d thread started\n", coder->coder_id); fflush(stdout);
+
 
     while (1)
     {
@@ -48,11 +44,8 @@ void    *coder_routine(void *arg)
         pthread_mutex_unlock(&coder->compile_lock);
         if (compiles_done >= coder->shared->args->nb_of_compiles)
             break;
-
-        // printf("DEBUG: coder %d calling acquire_dongles\n", coder->coder_id); fflush(stdout);
         if (acquire_dongles(coder) == -1)
             break;
-        // printf("DEBUG: coder %d got both dongles\n", coder->coder_id); fflush(stdout);
         pthread_mutex_lock(&coder->compile_lock);
         coder->last_compile_start = get_time_ms() ;
         pthread_mutex_unlock(&coder->compile_lock);

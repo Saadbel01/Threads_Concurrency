@@ -6,17 +6,11 @@ int take_dongle(t_dongle *dongle, t_coder  *coder)
     int stop;
     long long wait_ms;
     struct timespec timeout;
-
-    // printf("DEBUG: coder %d entering take_dongle for dongle %d\n", coder->coder_id, dongle->dongle_id); fflush(stdout);
+ 
     pthread_mutex_lock(&dongle->lock);
-    // printf("DEBUG: coder %d locked dongle %d\n", coder->coder_id, dongle->dongle_id); fflush(stdout);
-
-    // printf("DEBUG: coder %d about to lock mutex_stop\n", coder->coder_id); fflush(stdout);
     pthread_mutex_lock(&coder->shared->mutex_stop);
-    // printf("DEBUG: coder %d locked mutex_stop\n", coder->coder_id); fflush(stdout);
     stop = coder->shared->stop_simulation;
     pthread_mutex_unlock(&coder->shared->mutex_stop);
-    // printf("DEBUG: coder %d read stop=%d, checking while condition\n", coder->coder_id, stop); fflush(stdout);
 
     while ((dongle->is_held == 1
             || get_time_ms() < dongle->available_at)
@@ -24,7 +18,6 @@ int take_dongle(t_dongle *dongle, t_coder  *coder)
     {
         if (dongle->is_held == 1)
         {
-            // printf("DEBUG: coder %d entering cond_wait for dongle %d\n", coder->coder_id, dongle->dongle_id); fflush(stdout);
             pthread_cond_wait(&dongle->cond, &dongle->lock);
         }
         else
@@ -43,13 +36,10 @@ int take_dongle(t_dongle *dongle, t_coder  *coder)
                 pthread_cond_timedwait(&dongle->cond, &dongle->lock, &timeout);
             }
         }
-        // printf("DEBUG: coder %d woke from cond_wait\n", coder->coder_id); fflush(stdout);
         pthread_mutex_lock(&coder->shared->mutex_stop);
         stop = coder->shared->stop_simulation;
         pthread_mutex_unlock(&coder->shared->mutex_stop);
     }
-
-    // printf("DEBUG: coder %d exited while loop, is_held=%d, stop=%d\n", coder->coder_id, dongle->is_held, stop); fflush(stdout);
 
     if (stop == 1)
     {
@@ -59,11 +49,8 @@ int take_dongle(t_dongle *dongle, t_coder  *coder)
     else
     {
         dongle->is_held = 1;
-        // printf("DEBUG: coder %d about to lock log_mutex\n", coder->coder_id); fflush(stdout);
         pthread_mutex_lock(&coder->shared->log_mutex);
-        // printf("DEBUG: coder %d locked log_mutex\n", coder->coder_id); fflush(stdout);
         printf("%lld %d has taken a dongle\n", get_time_ms() - coder->shared->start_simulation, coder->coder_id);
-        fflush(stdout);
         pthread_mutex_unlock(&coder->shared->log_mutex);
         pthread_mutex_unlock(&dongle->lock);
         return (1);
