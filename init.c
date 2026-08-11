@@ -53,7 +53,7 @@ int init_coders(t_coder *coders, t_shared *shared, int nb_coders)
     {
         coders[i].coder_id = i + 1;
         coders[i].compiles_done = 0;
-        coders[i].last_compile_start = 0;
+        coders[i].last_compile_start = shared->start_simulation;
         coders[i].phase = 0;
         coders[i].shared = shared;
         coders[i].right_dongle = i + 1;
@@ -89,6 +89,8 @@ t_shared *init_shared(t_arg *args)
         printf("Error while allocating memory for shared_args.");
         exit(1);
     }
+    shared_args->start_simulation = get_time_ms();
+    shared_args->stop_simulation = 0;
     shared_args->dongle_array = malloc(sizeof(t_dongle) * args->nb_coders);
     shared_args->args = args;
     if (!shared_args->dongle_array)
@@ -140,8 +142,5 @@ t_shared *init_shared(t_arg *args)
         free(shared_args);
         exit(1);
     }
-    shared_args->start_simulation = get_time_ms();
-    shared_args->stop_simulation = 0;
-
     return (shared_args);
 }

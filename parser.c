@@ -77,21 +77,26 @@ void get_arguments(char **argv, t_arg    *args)
         args->scheduler = 0;
     else
         args->scheduler = 1;
-}
-
-int main(int argc, char **argv)
-{
-    check_arguments(argc, argv);
-    t_arg   *arguments;
-    arguments = malloc(sizeof(t_arg));
-
-    if (!arguments)
+    if (args->nb_coders == 1)
     {
-        printf("Failed to allocate memory for arguments.");
-        exit(-1);
+        printf("Error number of coders is 1.");
+        exit(1);
     }
-
-    get_arguments(argv, arguments);
-    printf("this: %d\n", arguments->scheduler);
-    return 0;
 }
+
+// int main(int argc, char **argv)
+// {
+//     check_arguments(argc, argv);
+//     t_arg   *arguments;
+//     arguments = malloc(sizeof(t_arg));
+
+//     if (!arguments)
+//     {
+//         printf("Failed to allocate memory for arguments.");
+//         exit(-1);
+//     }
+
+//     get_arguments(argv, arguments);
+//     printf("this: %d\n", arguments->scheduler);
+//     return 0;
+// }

@@ -7,6 +7,7 @@
 # include <fcntl.h>
 # include <pthread.h>
 # include <sys/time.h>
+# include <time.h>
 
 
 typedef struct s_shared t_shared;
@@ -35,7 +36,7 @@ typedef struct  t_dongle
 {
     int dongle_id;
     int is_held;
-    long available_at;
+    long long available_at;
     pthread_mutex_t lock;
     pthread_cond_t cond;
 }t_dongle;
@@ -47,7 +48,7 @@ typedef struct s_coder
     int phase;
     int left_dongle;
     int right_dongle;
-    long last_compile_start;
+    long long last_compile_start;
     pthread_mutex_t compile_lock;
     t_shared *shared;
 }t_coder;
@@ -60,7 +61,7 @@ typedef struct s_shared
     int stop_simulation;
     pthread_mutex_t mutex_stop;
     pthread_mutex_t log_mutex;
-    long start_simulation;
+    long long start_simulation;
     t_scheduler *scheduler_state;
 }t_shared;
 
@@ -68,8 +69,9 @@ typedef struct s_shared
 int     ft_strcmp(const char	*s1, const char	*s2);
 int     ft_strlen(const char    *str);
 int    acquire_dongles(t_coder *coder);
-long	get_time_ms(void);
+long long	get_time_ms(void);
 void    get_arguments(char **argv, t_arg    *args);
+void    release_dongle(t_dongle *dongle, int cooldown);
 void    release_dongles(t_coder *coder);
 void    *coder_routine(void *arg);
 void    check_arguments(int argc, char **argv);

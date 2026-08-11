@@ -8,8 +8,7 @@ SRCS = main.c \
        init.c \
        helpers.c \
        dongle.c \
-       coder.c \
-       monitor.c
+       coder.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -22,10 +21,10 @@ $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS)
+	rm $(OBJS)
 
 fclean: clean
-	rm -f $(NAME)
+	rm $(NAME)
 
 re: fclean all
 

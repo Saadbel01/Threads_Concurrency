@@ -25,10 +25,10 @@ int		ft_strlen(const char	*str)
 	return (i);
 }
 
-long	get_time_ms(void)
+long long	get_time_ms(void)
 {
 	struct timeval	tv;
 
 	gettimeofday(&tv, NULL);
-	return ((long)tv.tv_sec * 1000L + (long)tv.tv_usec / 1000L);
+	return ((long long)tv.tv_sec * 1000LL + (long long)tv.tv_usec / 1000LL);
 }
