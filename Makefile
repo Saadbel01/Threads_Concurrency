@@ -8,7 +8,8 @@ SRCS = main.c \
        init.c \
        helpers.c \
        dongle.c \
-       coder.c
+       coder.c \
+       heap.c
 
 OBJS = $(SRCS:.c=.o)
 
