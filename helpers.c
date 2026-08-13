@@ -32,3 +32,15 @@ long long	get_time_ms(void)
 	gettimeofday(&tv, NULL);
 	return ((long long)tv.tv_sec * 1000LL + (long long)tv.tv_usec / 1000LL);
 }
+
+int	simulation_stopped(t_shared *shared)
+{
+	int	stopped;
+
+	if (!shared)
+		return (1);
+	pthread_mutex_lock(&shared->mutex_stop);
+	stopped = shared->stop_simulation;
+	pthread_mutex_unlock(&shared->mutex_stop);
+	return (stopped);
+}

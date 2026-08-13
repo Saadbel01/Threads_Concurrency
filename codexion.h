@@ -9,9 +9,19 @@
 # include <sys/time.h>
 # include <time.h>
 
+#define FIFO 0
+#define EDF  1
 
 typedef struct s_shared t_shared;
-typedef struct s_coder  t_coder; 
+typedef struct s_coder  t_coder;
+
+
+typedef struct t_request
+{
+    int coder_id;
+    long long arrival_time;
+    long long deadline;
+}t_request;
 
 typedef struct  t_arg
 {
@@ -34,9 +44,11 @@ typedef struct t_scheduler
 
 typedef struct  t_dongle
 {
-    int dongle_id;
-    int is_held;
-    long long available_at;
+    t_request   heap[2];
+    int         heap_size;
+    int         dongle_id;
+    int         is_held;
+    long long   available_at;
     pthread_mutex_t lock;
     pthread_cond_t cond;
 }t_dongle;
@@ -77,7 +89,11 @@ void    *coder_routine(void *arg);
 void    check_arguments(int argc, char **argv);
 void    get_arguments(char **argv, t_arg    *args);
 void    *monitor_routine(void   *arg);
+int     simulation_stopped(t_shared *shared);
 void    wake_all_dongles(t_shared *shared);
+void    heap_push(t_dongle *dongle, t_request request, int scheduler);
+void    heap_remove(t_dongle *dongle, int coder_id);
+t_request heap_pop(t_dongle *dongle);
 t_shared *init_shared(t_arg *args);
 
 #endif

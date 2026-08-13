@@ -1,60 +1,48 @@
 #include "codexion.h"
 
 
-int take_dongle(t_dongle *dongle, t_coder  *coder)
+int take_dongle(t_dongle *dongle, t_coder *coder)
 {
-    int stop;
-    long long wait_ms;
-    struct timespec timeout;
- 
-    pthread_mutex_lock(&dongle->lock);
-    pthread_mutex_lock(&coder->shared->mutex_stop);
-    stop = coder->shared->stop_simulation;
-    pthread_mutex_unlock(&coder->shared->mutex_stop);
+    t_request request;
 
-    while ((dongle->is_held == 1
+    request.coder_id = coder->coder_id;
+    request.arrival_time = get_time_ms();
+
+    pthread_mutex_lock(&coder->compile_lock);
+    request.deadline = coder->last_compile_start
+        + coder->shared->args->time_to_burnout;
+    pthread_mutex_unlock(&coder->compile_lock);
+
+    pthread_mutex_lock(&dongle->lock);
+
+    heap_push(dongle, request, coder->shared->args->scheduler);
+
+    while ((dongle->heap[0].coder_id != coder->coder_id
+            || dongle->is_held
             || get_time_ms() < dongle->available_at)
-        && stop == 0)
+        && !simulation_stopped(coder->shared))
     {
-        if (dongle->is_held == 1)
-        {
-            pthread_cond_wait(&dongle->cond, &dongle->lock);
-        }
-        else
-        {
-            wait_ms = dongle->available_at - get_time_ms();
-            if (wait_ms > 0)
-            {
-                clock_gettime(CLOCK_REALTIME, &timeout);
-                timeout.tv_sec += wait_ms / 1000;
-                timeout.tv_nsec += (wait_ms % 1000) * 1000000L;
-                if (timeout.tv_nsec >= 1000000000L)
-                {
-                    timeout.tv_sec += 1;
-                    timeout.tv_nsec -= 1000000000L;
-                }
-                pthread_cond_timedwait(&dongle->cond, &dongle->lock, &timeout);
-            }
-        }
-        pthread_mutex_lock(&coder->shared->mutex_stop);
-        stop = coder->shared->stop_simulation;
-        pthread_mutex_unlock(&coder->shared->mutex_stop);
+        pthread_cond_wait(&dongle->cond, &dongle->lock);
     }
 
-    if (stop == 1)
+    if (simulation_stopped(coder->shared))
     {
+        heap_remove(dongle, coder->coder_id);
         pthread_mutex_unlock(&dongle->lock);
         return (-1);
     }
-    else
-    {
-        dongle->is_held = 1;
-        pthread_mutex_lock(&coder->shared->log_mutex);
-        printf("%lld %d has taken a dongle\n", get_time_ms() - coder->shared->start_simulation, coder->coder_id);
-        pthread_mutex_unlock(&coder->shared->log_mutex);
-        pthread_mutex_unlock(&dongle->lock);
-        return (1);
-    }
+
+    heap_pop(dongle);
+    dongle->is_held = 1;
+
+    pthread_mutex_lock(&coder->shared->log_mutex);
+    printf("%lld %d has taken a dongle\n",
+        get_time_ms() - coder->shared->start_simulation,
+        coder->coder_id);
+    pthread_mutex_unlock(&coder->shared->log_mutex);
+
+    pthread_mutex_unlock(&dongle->lock);
+    return (0);
 }
 
 int acquire_dongles(t_coder *coder)
