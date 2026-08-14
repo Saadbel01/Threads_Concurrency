@@ -77,9 +77,9 @@ void get_arguments(char **argv, t_arg    *args)
         args->scheduler = 0;
     else
         args->scheduler = 1;
-    if (args->nb_coders == 1)
-    {
-        printf("Error number of coders is 1.");
-        exit(1);
-    }
+    // if (args->nb_coders == 1)
+    // {
+    //     printf("Error number of coders is 1.");
+    //     exit(1);
+    // }
 }

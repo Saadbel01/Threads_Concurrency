@@ -11,6 +11,7 @@ int init_dongle_array(t_dongle *array, int nb_coders)
         array[i].dongle_id = i + 1;
         array[i].available_at = 0;
         array[i].is_held = 0;
+        array[i].heap_size = 0;
 
         if (pthread_mutex_init(&array[i].lock, NULL) != 0)
         {
