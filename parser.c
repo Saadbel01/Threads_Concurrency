@@ -50,7 +50,7 @@ void check_arguments(int argc, char **argv)
             printf("The argument number %d isn't valid, it should be an positive integer.", i + 1);
             exit(1);
         }
-        if (!in_range_int(argv[i]))
+        if (i != 7 && !in_range_int(argv[i]))
         {
             printf("The argument number %d should be between 1 and MAX_INT.\n", i);
             exit(1);

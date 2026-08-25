@@ -96,4 +96,7 @@ void    heap_remove(t_dongle *dongle, int coder_id);
 t_request heap_pop(t_dongle *dongle);
 t_shared *init_shared(t_arg *args);
 
+void	safe_sleep(long ms, t_shared *shared);
+
+
 #endif

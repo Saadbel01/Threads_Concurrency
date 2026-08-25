@@ -44,3 +44,16 @@ int	simulation_stopped(t_shared *shared)
 	pthread_mutex_unlock(&shared->mutex_stop);
 	return (stopped);
 }
+
+void	safe_sleep(long ms, t_shared *shared)
+{
+	long	start;
+
+	start = get_time_ms();
+	while (!simulation_stopped(shared))
+	{
+		if (get_time_ms() - start >= ms)
+			break ;
+		usleep(10);
+	}
+}
