@@ -1,147 +1,105 @@
 #include "codexion.h"
 
-int init_dongle_array(t_dongle *array, int nb_coders)
+static void	destroy_dongles(t_dongle *array, int count)
 {
-    int i;
-    int j;
+	int	j;
 
-    i = 0;
-    while (i < nb_coders)
-    {
-        array[i].dongle_id = i + 1;
-        array[i].available_at = 0;
-        array[i].is_held = 0;
-        array[i].heap_size = 0;
-
-        if (pthread_mutex_init(&array[i].lock, NULL) != 0)
-        {
-            j = i - 1;
-            while (j >= 0)
-            {
-                pthread_cond_destroy(&array[j].cond);
-                pthread_mutex_destroy(&array[j].lock);
-                j--;
-            }
-            return (-1);
-        }
-
-        if (pthread_cond_init(&array[i].cond, NULL) != 0)
-        {
-            pthread_mutex_destroy(&array[i].lock);
-
-            j = i - 1;
-            while (j >= 0)
-            {
-                pthread_cond_destroy(&array[j].cond);
-                pthread_mutex_destroy(&array[j].lock);
-                j--;
-            }
-            return (-1);
-        }
-        i++;
-    }
-
-    return (0);
+	j = count - 1;
+	while (j >= 0)
+	{
+		pthread_cond_destroy(&array[j].cond);
+		pthread_mutex_destroy(&array[j].lock);
+		j--;
+	}
 }
 
-int init_coders(t_coder *coders, t_shared *shared, int nb_coders)
+int	init_dongle_array(t_dongle *array, int nb_coders)
 {
-    int i;
-    int j;
+	int	i;
 
-    i = 0;
-    while (i < nb_coders)
-    {
-        coders[i].coder_id = i + 1;
-        coders[i].compiles_done = 0;
-        coders[i].last_compile_start = shared->start_simulation;
-        coders[i].phase = 0;
-        coders[i].shared = shared;
-        coders[i].right_dongle = i + 1;
-        coders[i].left_dongle = i;
-        if (i == 0)
-            coders[i].left_dongle = nb_coders;
-
-        if (pthread_mutex_init(&coders[i].compile_lock, NULL) != 0)
-        {
-            j = i - 1;
-            while (j >= 0)
-            {
-                pthread_mutex_destroy(&coders[j].compile_lock);
-                j--;
-            }
-            return (-1);
-        }
-        i++;
-    }
-    return (0);
+	i = 0;
+	while (i < nb_coders)
+	{
+		array[i].dongle_id = i + 1;
+		array[i].available_at = 0;
+		array[i].is_held = 0;
+		array[i].heap_size = 0;
+		if (pthread_mutex_init(&array[i].lock, NULL) != 0)
+		{
+			destroy_dongles(array, i);
+			return (-1);
+		}
+		if (pthread_cond_init(&array[i].cond, NULL) != 0)
+		{
+			pthread_mutex_destroy(&array[i].lock);
+			destroy_dongles(array, i);
+			return (-1);
+		}
+		i++;
+	}
+	return (0);
 }
 
-t_shared *init_shared(t_arg *args)
+static void	destroy_coders(t_coder *coders, int count)
 {
-    t_shared *shared_args;
-    int res_init_dongle_array;
-    int res_init_coders;
+	int	j;
 
-    shared_args = malloc(sizeof(t_shared));
+	j = count - 1;
+	while (j >= 0)
+	{
+		pthread_mutex_destroy(&coders[j].compile_lock);
+		j--;
+	}
+}
 
-    if (!shared_args)
-    {
-        printf("Error while allocating memory for shared_args.");
-        exit(1);
-    }
-    shared_args->start_simulation = get_time_ms();
-    shared_args->stop_simulation = 0;
-    shared_args->dongle_array = malloc(sizeof(t_dongle) * args->nb_coders);
-    shared_args->args = args;
-    if (!shared_args->dongle_array)
-    {
-        printf("Error while allocating memory for dongle_array.");
-        free(shared_args);
-        exit(1);
-    }
+int	init_coders(t_coder *coders, t_shared *shared, int nb_coders)
+{
+	int	i;
 
-    res_init_dongle_array = init_dongle_array(shared_args->dongle_array, shared_args->args->nb_coders);
-    if (res_init_dongle_array != 0)
-    {
-        printf("Error failed to init the dongle array.");        
-        free(shared_args->dongle_array);
-        free(shared_args);
-        exit(1);
-    }
+	i = 0;
+	while (i < nb_coders)
+	{
+		coders[i].coder_id = i + 1;
+		coders[i].compiles_done = 0;
+		coders[i].last_compile_start = shared->start_simulation;
+		coders[i].phase = 0;
+		coders[i].shared = shared;
+		coders[i].right_dongle = i + 1;
+		coders[i].left_dongle = i;
+		if (i == 0)
+			coders[i].left_dongle = nb_coders;
+		if (pthread_mutex_init(&coders[i].compile_lock, NULL) != 0)
+		{
+			destroy_coders(coders, i);
+			return (-1);
+		}
+		i++;
+	}
+	return (0);
+}
 
-    shared_args->coders = malloc(sizeof(t_coder) * args->nb_coders);
-    if (!shared_args->coders)
-    {
-        printf("Error while allocating memory for coders.");
-        free(shared_args);
-        exit(1);
-    }
-    res_init_coders = init_coders(shared_args->coders, shared_args, shared_args->args->nb_coders);
-    if (res_init_coders != 0)
-    {
-        printf("Error the lock mutex failed.");
-        free(shared_args->coders);
-        free(shared_args->dongle_array);
-        free(shared_args);
-        exit(1);
-    }
-    if (pthread_mutex_init(&shared_args->log_mutex, NULL) != 0)
-    {
-        printf("Error the log mutex failed.");
-        free(shared_args->coders);
-        free(shared_args->dongle_array);
-        free(shared_args);
-        exit(1);
-    }
-    if (pthread_mutex_init(&shared_args->mutex_stop, NULL) != 0)
-    {
-        printf("Error the stop mutex failed.");
-        free(shared_args->coders);
-        free(shared_args->dongle_array);
-        pthread_mutex_destroy(&shared_args->log_mutex);
-        free(shared_args);
-        exit(1);
-    }
-    return (shared_args);
+t_shared	*init_shared(t_arg *args)
+{
+	t_shared	*shared;
+
+	shared = malloc(sizeof(t_shared));
+	if (!shared)
+		return (NULL);
+	shared->start_simulation = get_time_ms();
+	shared->stop_simulation = 0;
+	shared->args = args;
+	shared->dongle_array = malloc(sizeof(t_dongle) * args->nb_coders);
+	shared->coders = malloc(sizeof(t_coder) * args->nb_coders);
+	if (!shared->dongle_array || !shared->coders
+		|| init_dongle_array(shared->dongle_array, args->nb_coders) != 0
+		|| init_coders(shared->coders, shared, args->nb_coders) != 0
+		|| pthread_mutex_init(&shared->log_mutex, NULL) != 0
+		|| pthread_mutex_init(&shared->mutex_stop, NULL) != 0)
+	{
+		free(shared->dongle_array);
+		free(shared->coders);
+		free(shared);
+		return (NULL);
+	}
+	return (shared);
 }
