@@ -55,18 +55,28 @@ static void	wait_dongle(t_coder *c, t_dongle *target)
 	pthread_mutex_unlock(&target->lock);
 }
 
-static void	assign_dongles(t_coder *c, t_dongle **d1, t_dongle **d2)
+static int	try_and_wait(t_coder *coder, t_dongle *d1, t_dongle *d2)
 {
-	if (c->left_dongle < c->right_dongle)
+	pthread_mutex_lock(&d1->lock);
+	pthread_mutex_lock(&d2->lock);
+	if (try_take_both(coder, d1, d2))
 	{
-		*d1 = &c->shared->dongle_array[c->left_dongle - 1];
-		*d2 = &c->shared->dongle_array[c->right_dongle - 1];
+		pthread_mutex_unlock(&d2->lock);
+		pthread_mutex_unlock(&d1->lock);
+		return (1);
+	}
+	if (d1->heap[TOP].coder_id != coder->coder_id || d1->is_held
+		|| get_time_ms() < d1->available_at)
+	{
+		pthread_mutex_unlock(&d2->lock);
+		wait_dongle(coder, d1);
 	}
 	else
 	{
-		*d1 = &c->shared->dongle_array[c->right_dongle - 1];
-		*d2 = &c->shared->dongle_array[c->left_dongle - 1];
+		pthread_mutex_unlock(&d1->lock);
+		wait_dongle(coder, d2);
 	}
+	return (0);
 }
 
 int	acquire_dongles(t_coder *coder)
@@ -76,29 +86,11 @@ int	acquire_dongles(t_coder *coder)
 
 	if (coder->shared->args->nb_coders == 1)
 		return (handle_single_coder(coder));
-	assign_dongles(coder, &d1, &d2);
-	push_both_requests(coder, d1, d2);
+	init_dongle_requests(coder, &d1, &d2);
 	while (!simulation_stopped(coder->shared))
 	{
-		pthread_mutex_lock(&d1->lock);
-		pthread_mutex_lock(&d2->lock);
-		if (try_take_both(coder, d1, d2))
-		{
-			pthread_mutex_unlock(&d2->lock);
-			pthread_mutex_unlock(&d1->lock);
+		if (try_and_wait(coder, d1, d2))
 			return (1);
-		}
-		if (d1->heap[TOP].coder_id != coder->coder_id || d1->is_held
-			|| get_time_ms() < d1->available_at)
-		{
-			pthread_mutex_unlock(&d2->lock);
-			wait_dongle(coder, d1);
-		}
-		else
-		{
-			pthread_mutex_unlock(&d1->lock);
-			wait_dongle(coder, d2);
-		}
 	}
 	remove_both_requests(coder, d1, d2);
 	return (-1);

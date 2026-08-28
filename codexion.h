@@ -92,7 +92,7 @@ void		*monitor_routine(void *arg);
 int			acquire_dongles(t_coder *coder);
 void		release_dongle(t_dongle *dongle, int cooldown);
 void		release_dongles(t_coder *coder);
-void		push_both_requests(t_coder *coder, t_dongle *d1, t_dongle *d2);
+void		init_dongle_requests(t_coder *coder, t_dongle **d1, t_dongle **d2);
 void		remove_both_requests(t_coder *coder, t_dongle *d1, t_dongle *d2);
 int			handle_single_coder(t_coder *coder);
 
